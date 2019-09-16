@@ -77,6 +77,7 @@ text(hp$mids,hp$counts,labels=hp$counts, adj=c(0.5, -0.5))
 range(Boston$ptratio)
 
 ```
+
 Per capita crime rates in the suburbs range from 0.00632 to 88.9762. The distribution of crime rates are skewed right. A large majority of the suburbs have low crime rates below 20. Only 18 of the suburbs have particularly high crime rates above 20. 
 
 Property tax rates in the suburbs range from 187 to 711. The distribution of property tax rates are roughly symmetrical, but there is a peak of 132 suburbs with property tax rates between 650 and 700. Most of the suburbs have property tax rates below 500, but there are 137 suburbs with higher tax rates above 650. 
