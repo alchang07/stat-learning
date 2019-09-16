@@ -1,0 +1,112 @@
+
+---
+title: "Lab 1: Exploratory Data Analysis"
+subtitle: "This Bitter Earth"
+author: "Alice Chang"
+output: pdf_document
+
+---
+
+* * *
+
+#### Exercise 1
+
+```{r}
+library(MASS)
+data(Boston)
+```
+
+There are 506 rows and 14 columns. The rows represent the number of cases/observations in the dataset. The cases are each of the suburbs in Boston that are included in this dataset. The columns represent the variables in this dataset measuring different attributes of each suburb in the Boston housing area. If we were to build a model assessing the relationship between different features of the suburb ond housing values, there would be 13 independent variables (x) and one target dependent variable (y). The independent variables include charactersitics of the town's businesses/education/employment/crime, the racial/economic composition of the population, as well as features of individual dwellings. The dependent variable (medv) would measure the median housing value in each suburb. 
+
+#### Exercise 2
+
+```{r}
+pairs(~dis + lstat + medv, Boston)
+pairs(~age + lstat + nox, Boston)
+
+```
+
+
+
+a) There isa strong negative curvilinear relationship between the perentage of the population that is “lower status” andthe median housing value of owner-occupied homes in a suburb (lstat/medv). In general, as the proportionof the population that is “lower status” increases, the housing value of owner-occupied homes in a suburb descreases.
+
+
+There is a moderately strong negative curvilinear relationship between a suburb's distance from Boston employment centers and the percentage of the population that is "lower status" (lstat/dis). In general, as the "lower status" population of a suburb increases, its distance from employment centers decreases. 
+
+There is a very weak positive curvilinear relationship between the median housing value of owner-occupied homes in a suburb and its distance from employment centers (dis/medv). To speak very generally, as a suburb's distance from employment centers increases, the median housing value of homes increases as well. 
+
+b) There is a weak positive linear relationship between the percentage of the population that is "lower status" and the concentration of nitrogen oxides in a suburb (nox/lstat). In general, as the population of "lower status" residents increases, the concentration of nitrogen oxides in the town increases as well. 
+
+There is a moderately strong positive curvilinear relationship between the proportion of older owner-occupied units in a suburb and the concentration of nitrogen oxides in a town (age/nox). In general, as the proportion of owner-occupied units built prior to 1940 increases, the concentration of nitrogen oxides in a suburb increases as well. 
+
+There is a weak positive curvilinear relationship between the proportion of older owner-occupied units and the percentage of lower-status residents in a suburb (age/lstat). In general, as the percentage of lower-status residents in a suburb increases, the proportion of older owner-occupied units in a suburb increases as well. 
+
+#### Exercise 3
+
+```{r}
+pairs(Boston)
+plot(Boston$age, Boston$crim)
+plot(Boston$dis, Boston$crim)
+plot(Boston$medv, Boston$crim)
+
+```
+
+The predictors that have the strongest association with per capita crime rate are the proportion of older owner-occupied units (age), the weighted distance of suburbs from employment centers (dis), and the median value of owner-occupied homes (medv). 
+
+There is a very weak positive curvilinear relationship between the proportion of older owner-occupied units in a suburb and per capita crime rate. In general, as the proportion of older homes increases, per capita crime rate increases as well. 
+
+There is a very weak negative curvilinear relationship between the distance of a suburb from employment centers and per capita crime rate. In general as the distance of a suburb from employment centers in Boston increases, per capita crime rate decreases.
+
+There is a very weak negative curvilinear relationship between median housing value in a suburb and per capita crime rate. In general, as the median value of owner-occupied units in a suburb increases, per capita crime rate decreases. 
+
+#### Exercise 4
+
+```{r}
+
+hc <- hist(Boston$crim)
+hc
+text(hc$mids,hc$counts,labels=hc$counts, adj=c(0.5, -0.5))
+range(Boston$crim)
+ht <- hist(Boston$tax)
+ht
+text(ht$mids,ht$counts,labels=ht$counts, adj=c(0.5, -0.5))
+range(Boston$tax)
+hp <- hist(Boston$ptratio)
+hp
+text(hp$mids,hp$counts,labels=hp$counts, adj=c(0.5, -0.5))
+range(Boston$ptratio)
+
+```
+Per capita crime rates in the suburbs range from 0.00632 to 88.9762. The distribution of crime rates are skewed right. A large majority of the suburbs have low crime rates below 20. Only 18 of the suburbs have particularly high crime rates above 20. 
+
+Property tax rates in the suburbs range from 187 to 711. The distribution of property tax rates are roughly symmetrical, but there is a peak of 132 suburbs with property tax rates between 650 and 700. Most of the suburbs have property tax rates below 500, but there are 137 suburbs with higher tax rates above 650. 
+
+Pupil-teacher ratios among suburbs range from 12.6 to 22. The distribution of pupil-teacher ratios is skewed left. Only 18 suburbs have the highest pupil-teacher ratio of 21, but that is not particularly high. 
+
+#### Exercise 5
+
+```{r}
+hist(Boston$chas)
+table(Boston$chas)
+```
+
+35 suburbs in the data set bound the Charles River.
+
+#### Exercise 6
+
+```{r}
+summary(Boston$ptratio)
+```
+
+The median pupil-teacher ratio among the towns in the dataset is 19.05
+
+#### Exercise 7
+
+```{r}
+plot(Boston$crim, Boston$medv)
+plot(Boston$lstat, Boston$medv)
+plot(Boston$black, Boston$medv)
+```
+
+In building a model to predict the average value of a home, my output/response variable would be "medv" which measures the median value of owner-occupied homes. I would first evaluate all of the other 13 variables measuring other attributes of Boston suburbs as inputs/predictors. However, based off of my 
+preliminary exploration of the data set, per capita crime rate (crim), the proportion of black residents in the town population (black), and the percentage of "lower status" residents in the suburb seem to have stronger associations with housing value. Consequently, it might be reasonable to focus on those three variables (crim, black, lstat) as predictors in my model.  
