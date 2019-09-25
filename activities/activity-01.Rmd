@@ -1,0 +1,37 @@
+---
+title: "activity-1"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+URL <- "http://andrewpbray.github.io/data/LA.csv"
+LA <- read.csv(URL)
+```
+
+
+
+```{r}
+m1 <- lm(log(price) ~ log(sqft) + bed + city, data = LA)
+summary(m1)
+
+m2 <- lm(log(price) ~ log(sqft) + bed + city + log(sqft):city, data = LA)
+summary(m2)
+
+m3 <- lm(log(price) ~ log(sqft) + bed + log(sqft):bed, data = LA)
+summary(m3)
+
+```
+The geometry of the first model seems to be four parallel planes, while the geometry of the second model would be four planes with different slopes. 
+
+Beverly Hills appears to be the reference level for city?
+
+For every increase in bedrooms in a home -- holding all other variables constant -- the log price of the house decreases by 5.13. This makes sense because by holding the square footage of a house constant and adding more rooms into the limited space, it is likely that the value of the house will go down. 
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
