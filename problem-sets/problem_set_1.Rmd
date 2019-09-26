@@ -9,6 +9,7 @@ output: pdf_document
 ### Chapter 2 exercises
 
 #### Exercise 1
+
 a) Better: In covering a broader range of functional forms and shapes for f, a flexible statistical learning method would better fit the data with a larger number of observations (n).
 b) Worse: Flexible methods often do not relate response variables to a small set of predictors or estimate f through a few parameters. As a result, the model is less interpretable as it will be difficult to see how any individual predictor relates to the reponse variable, and there is a greater possibility of overfitting the data. 
 c) Better: More flexible methods allow for consideration of non-linear relationships between X and Y. As flexibility increases, the bias -- included in the test MSE -- generally decreases as well when the true f is non-linear. 
