@@ -1,5 +1,6 @@
 ---
-title: "activity-1"
+title: "Activity 1: LA Housing Data"
+author: "Alice Chang"
 output: pdf_document
 ---
 
