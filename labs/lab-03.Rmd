@@ -1,0 +1,169 @@
+
+---
+title: "Lab 3: Regression Competition"
+subtitle: "In the hot New Jersey night"
+author: "Group A: Alice Chang, Isidore Weis, Sarah Maebius"
+output: pdf_document
+
+---
+
+* * *
+
+## Fit Model and Calculate MSE
+```{r}
+library(dplyr)
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+
+group_A_fit <- function(training_data) {
+  training_data <- mutate(training_data, sqrtcrime = sqrt(ViolentCrimesPerPop))
+  
+  m1 <- lm(sqrtcrime ~ PctIlleg + racePctWhite + TotalPctDiv + PctVacantBoarded:racePctWhite + LemasPctOfficDrugUn + MedRentPctHousInc + PctNotHSGrad, data = training_data)
+  
+  m1
+}
+
+group_A_MSE <- function(model, data) {
+  
+  data <- mutate(data, sqrtcrime = sqrt(ViolentCrimesPerPop))
+  
+  errors <- function(x1, x2, x3, x4, x5, x6, x7){
+    predicted <- model$coefficients[1] + (model$coefficients[2] * x1) + (model$coefficients[3] * x2) + (model$coefficients[4] * x3) + (model$coefficients[5] * x4) + (model$coefficients[6] * x5) + (model$coefficients[7] * x6) + (model$coefficients[8] * x7)
+    err <- data$sqrtcrime - predicted
+    err
+  }
+  
+  MSE <- mean(errors(data$PctIlleg, data$racePctWhite, data$TotalPctDiv, data$LemasPctOfficDrugUn, data$MedRentPctHousInc, data$PctNotHSGrad, (data$racePctWhite * data$PctVacantBoarded))^2)
+  MSE
+  
+}
+```
+
+
+#### EXPLORATORY DATA ANALYSIS
+```{r}
+library(MASS)
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+d_cleaned <- data.frame("blank" = rep(0, nrow(d)))
+counter <- 1
+
+for(i in 5:ncol(d)){
+  if(d[1, i] != "?"){
+    d_cleaned[[counter]] <- d[[i]]
+    colnames(d_cleaned)[counter] <- colnames(d)[i]
+    counter <- counter + 1
+  }
+}
+
+corr_matrix <- cor(d_cleaned)
+
+against_crim <- corr_matrix[nrow(corr_matrix),]
+
+sorted <- sort(abs(against_crim), decreasing = TRUE)
+sorted
+
+pairs(~ViolentCrimesPerPop + PctIlleg  + PctKids2Par, d_cleaned)
+pairs(~ViolentCrimesPerPop + racePctWhite + pctWPubAsst, d_cleaned)
+pairs(~ViolentCrimesPerPop + TotalPctDiv + pctWInvInc, d_cleaned)
+
+
+
+
+```
+Out of all the predictors, the percentage of the population that are divorced(TotalPctDiv), percentage of households recieving rent/investment income in 1989(pctWInvInc), percentage of households with public assistance income (pctWPubAsst), percentage of whites in the population (racePctWhite), percentage of "illegitimate" children (PctIlleg), and the percentage of families with kids in a  two-parent household (PctKids2Par) seem to be the most strongly correlated with the per capita rate of violent crime (ViolentCrimesPerPop). 
+#### Checking for Multicollinearity
+
+```{r}
+check_cor <- cor(d_cleaned)
+round(check_cor, 2)
+
+```
+
+There is seems to be strong multicollinearity (-0.7) between the percentage of illegtimate children in the population (PctIlleg) and the percentage of families that are two-parent households (PctKids2Par), suggesting that we should choose one of the predictors to incorporate. 
+#### MODEL BUILDING
+#### Models 1-12
+```{r}
+
+fit1 <- lm(ViolentCrimesPerPop ~ PctIlleg + racePctWhite + pctWPubAsst +  TotalPctDiv + pctWInvInc, d_cleaned)
+
+summary(fit1)
+
+fit2 <- lm(ViolentCrimesPerPop ~ PctIlleg + pctWPubAsst + TotalPctDiv + racePctWhite + pctWInvInc + racePctWhite*pctWPubAsst, d_cleaned)
+summary(fit2)
+
+fit3 <- lm(ViolentCrimesPerPop ~ PctIlleg + racePctWhite + pctWPubAsst + racePctWhite*PctHousOwnOcc+ racePctWhite*pctWPubAsst, d_cleaned )
+summary(fit3)
+
+fit4 <- lm(ViolentCrimesPerPop ~ PctIlleg + TotalPctDiv + racePctWhite + racePctWhite*pctWPubAsst, d_cleaned)
+summary(fit4)
+
+fit5 <- lm(ViolentCrimesPerPop ~ racePctWhite*PctIlleg + racePctWhite*TotalPctDiv + racePctWhite*pctWPubAsst, d_cleaned)
+summary(fit5)
+
+fit6 <- lm(ViolentCrimesPerPop ~ racePctWhite*PctIlleg + racePctWhite*TotalPctDiv + racePctWhite*pctWPubAsst + racePctWhite*PctPopUnderPov, d_cleaned)
+summary(fit6)
+
+fit7 <- lm(ViolentCrimesPerPop ~ racePctWhite*PctIlleg + racePctWhite*TotalPctDiv + racePctWhite*pctWPubAsst + racePctWhite*NumInShelters, d_cleaned)
+summary(fit7)
+
+fit8 <- lm(ViolentCrimesPerPop ~ racePctWhite*PctIlleg + racePctWhite*TotalPctDiv + racePctWhite*pctWPubAsst + PctHousNoPhone, d_cleaned)
+summary(fit8)
+
+fit9 <- lm(ViolentCrimesPerPop ~ racePctWhite*PctIlleg + racePctWhite*TotalPctDiv + racePctWhite*pctWPubAsst + PctHousNoPhone, d_cleaned)
+summary(fit9)
+
+fit10 <- lm(ViolentCrimesPerPop ~ racePctWhite*PctIlleg + racePctWhite*TotalPctDiv + racePctWhite*pctWPubAsst + NumInShelters, d_cleaned)
+summary(fit10)
+
+fit11 <- lm(ViolentCrimesPerPop ~ racePctWhite*PctIlleg + racePctWhite*TotalPctDiv  + NumInShelters + racePctWhite*pctWPubAsst + racePctWhite*pctWInvInc + racePctWhite*PctUnemployed, d_cleaned)
+summary(fit9)
+
+
+fit12<- lm(ViolentCrimesPerPop ~ racePctWhite*PctIlleg + racePctWhite*TotalPctDiv  + NumInShelters + pctWPubAsst + pctWInvInc, d_cleaned)
+summary(fit12)
+
+```
+
+#### Models 13-20
+Apply square root transformation of ViolentCrimesPerPopNew
+```{r pressure, echo=FALSE}
+d_cleaned <- mutate(d_cleaned, ViolentCrimesPerPopNew = sqrt(ViolentCrimesPerPop))
+
+fit13 <- lm(ViolentCrimesPerPopNew ~ racePctWhite*PctIlleg + racePctWhite*TotalPctDiv  + NumInShelters + racePctWhite*pctWPubAsst + racePctWhite*pctWInvInc + racePctWhite*PctUnemployed, d_cleaned)
+summary(fit13)
+
+fit14 <- lm(ViolentCrimesPerPopNew ~ racePctWhite*PctIlleg + racePctWhite*TotalPctDiv  + NumInShelters + racePctWhite*pctWPubAsst + racePctWhite*pctWInvInc + racePctWhite*PctUnemployed + PctVacantBoarded, d_cleaned)
+summary(fit14)
+
+fit15 <- lm(ViolentCrimesPerPopNew ~ PctIlleg + racePctWhite + TotalPctDiv + NumIlleg + PctVacantBoarded + LemasPctOfficDrugUn + MedRentPctHousInc + PctNotHSGrad, d_cleaned)
+summary(fit15)
+
+fit16 <- lm(ViolentCrimesPerPopNew ~ racePctWhite*PctIlleg + racePctWhite*TotalPctDiv + racePctWhite*PctVacantBoarded + racePctWhite*LemasPctOfficDrugUn + racePctWhite*MedRentPctHousInc + racePctWhite*PctNotHSGrad, d_cleaned)
+summary(fit16)
+
+fit17 <- lm(ViolentCrimesPerPopNew ~ PctIlleg + racePctWhite + TotalPctDiv + PctVacantBoarded + racePctWhite*LemasPctOfficDrugUn + MedRentPctHousInc + racePctWhite*PctNotHSGrad, d_cleaned)
+summary(fit17)
+
+fit18 <- lm(ViolentCrimesPerPopNew ~  PctIlleg + TotalPctDiv + racePctWhite*PctVacantBoarded + LemasPctOfficDrugUn + MedRentPctHousInc + PctNotHSGrad, d_cleaned)
+summary(fit18)
+
+fit19 <- lm(ViolentCrimesPerPopNew ~  PctIlleg + TotalPctDiv + PctVacantBoarded + LemasPctOfficDrugUn + MedRentPctHousInc + racePctWhite*PctNotHSGrad, d_cleaned)
+summary(fit19)
+
+fit20 <- lm(ViolentCrimesPerPopNew ~  PctIlleg + TotalPctDiv + PctVacantBoarded + LemasPctOfficDrugUn + racePctWhite*MedRentPctHousInc + PctNotHSGrad, d_cleaned)
+summary(fit20)
+
+```
+
+#### Final Model Diagnostics
+```{r}
+m <- lm(ViolentCrimesPerPopNew ~ PctIlleg + racePctWhite + TotalPctDiv + PctVacantBoarded*racePctWhite + LemasPctOfficDrugUn + MedRentPctHousInc + PctNotHSGrad, d_cleaned)
+summary(m)
+
+plot(m, 1)
+plot(m, 2)
+plot(m, 3)
+plot(m, 4)
+```
+RSE =  0.1291
+Adjusted R-squared:  0.6658 
+
