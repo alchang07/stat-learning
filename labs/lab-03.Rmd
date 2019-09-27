@@ -12,6 +12,7 @@ output: pdf_document
 ## Fit Model and Calculate MSE
 ```{r}
 library(dplyr)
+
 d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
 
 group_A_fit <- function(training_data) {
