@@ -28,10 +28,23 @@ for(i in 5:ncol(d)){
 
 group_A_automated_fit<- function(training_data) {
 
-m1 <- lm(ViolentCrimesPerPop ~   racePctWhite + racePctHisp + pctWSocSec + indianPerCap + PctLess9thGrade + PctNotHSGrad + PctEmploy + PctEmplProfServ + MalePctDivorce + FemalePctDiv + PctWorkMom + PctIlleg + PctImmigRec5 + PctImmigRec8 + PctImmigRec10 + PctVacantBoarded + PctVacMore6Mos + PctHousNoPhone + MedRent + MedRentPctHousInc + RentLowQ + MedOwnCostPctIncNoMtg + NumStreet + pctUrban + PctHousOccup, d_cleaned)
+m1 <- lm(ViolentCrimesPerPop ~ racePctWhite + 
+           racePctHisp + pctWSocSec 
+         + indianPerCap + PctLess9thGrade 
+        + PctNotHSGrad + PctEmploy 
+        + PctEmplProfServ + MalePctDivorce 
+        + FemalePctDiv + PctWorkMom 
+        + PctIlleg + PctImmigRec5 
+        + PctImmigRec8 + PctImmigRec10 
+        + PctVacantBoarded + PctVacMore6Mos 
+        + PctHousNoPhone + MedRent 
+        + MedRentPctHousInc + RentLowQ 
+        + MedOwnCostPctIncNoMtg + NumStreet 
+        + pctUrban + PctHousOccup, d_cleaned)
 m1
 }
 
+m1 <- group_A_automated_fit(d_cleaned)
 
 
 group_A_process <- function(training_data) {
@@ -40,7 +53,7 @@ group_A_process <- function(training_data) {
 }
 
 
-group_A_automated_fit(d_cleaned)
+
 
 group_A_MSE <- function(model, data) {
   group_A_process(data)
@@ -58,6 +71,8 @@ group_A_MSE(m1, d_cleaned)
 
 #### Forward Selection
 ```{r}
+
+library(leaps)
 
 r1 <- regsubsets(ViolentCrimesPerPop ~ ., data = d_cleaned, nvmax = 25, method = "forward")
 
@@ -84,8 +99,11 @@ summary(best.model)
 
 
 ```
-sesresr
-### Backward Selection
+Adjusted R-squared of best model from forward selection = 0.6838 
+After comparing, to the best model derived from backward selection, this model has a smaller adjusted R-squared.  Consequently, I fitted this model (r1) as m1 above, and derived its MSE. 
+
+
+#### BACKWARD SELECTION
 ```{r}
 r2 <- regsubsets(ViolentCrimesPerPop ~ ., data = d_cleaned, nvmax = 25, method = "backward")
 
@@ -106,5 +124,9 @@ best.model2 <- lm(ViolentCrimesPerPop ~ population + householdsize + racePctWhit
 
 
 summary(best.model2)
+
+
+
+
 ```
-zczdfsf
+The Adjusted R-squared is 0.6844, which is greater than the estimate from the pervious modelusing forward selectino. Consequently, I fitted the previous model to calculate the MSE. 
