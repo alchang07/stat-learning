@@ -1,0 +1,127 @@
+
+---
+title: "Lab 4: One last time through the hot New Jersey night..."
+author: "Alice Chang"
+output: pdf_document
+
+---
+
+* * *
+
+#### Load/Clean Data
+
+```{r}
+library(MASS)
+library(glmnet)
+library(dplyr)
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+d_c <- d %>% 
+  select_if(function(col) !any(col == "?")) %>%
+   select(-c("communityname")) 
+
+
+
+```
+
+
+
+#### Ridge Regression, Lasso, and "Violent Crime" Dataset
+
+```{r}
+#RFit ridge regression model
+X <- model.matrix(ViolentCrimesPerPop ~ ., data = d_c)[, -1]
+Y <- d_c$ViolentCrimesPerPop
+grid <- seq(from = 1e4, to = 1e-2, length.out = 100)
+rm1 <- glmnet(x = X, y = Y, alpha = 0,
+lambda = grid, standardize = TRUE)
+#find best lambda for ridge regrssion
+set.seed(1)
+cv.out = cv.glmnet(X, Y, alpha = 0)
+plot(cv.out)
+bestlam = cv.out$lambda.min
+bestlam
+
+#get training MSE for ridge
+ridge.pred = predict(rm1, s = bestlam, X)
+MSE <- mean((ridge.pred-Y)^2)
+MSE
+
+#Explore coefficient estimates of fitted ridge regression model                 
+dim(coef(rm1))        
+out = glmnet(X, Y, alpha = 0)
+predict(out, type = "coefficients", s = bestlam) [1:102]
+
+#Fit LASSO
+lasso.mod <- glmnet(x = X, y = Y, alpha = 1,
+lambda = grid, standardize = TRUE)
+plot(lasso.mod)
+
+#find best lambda for LASSO
+set.seed(1)
+cv.out1 = cv.glmnet(X, Y, alpha = 1)
+plot(cv.out1)
+bestlam1 = cv.out1$lambda.min
+bestlam1
+
+#Get training MSE for LASSO
+lasso.pred = predict(lasso.mod, s = bestlam1, X)
+MSE_lasso = mean ((lasso.pred - Y)^2)
+MSE_lasso
+
+#Explore coefficient estimates of LASSO and selected variables
+out = glmnet(X, Y, alpha = 1, lambda = grid)
+lasso.coef = predict(out, type = "coefficients", s = bestlam1)[1:102,]
+lasso.coef[lasso.coef != 0]
+
+```
+
+
+1. LASSO selected 15 variables.
+2. a) Using an optimal $\lambda$ of 0.09316328, the training value for ridge regression is 0.01626048
+   b) Using an optimal $\lambda$ of 0.006727142, the training MSE for LASSO is 0.01828638. 
+3. The training MSE for LASSO is slightly higher than the training MSE for ridge regression. The better performance of ridge regression may be due to the the fact that we are analyzing a training dataset with many predictors (102), all with coefficients of approximately similar sizes. As shown above, in the fitting of the ridge regression model on the training dataset, all of the coefficients are small and close to zero. 
+
+
+#### Problem Set 2
+2.a) iii. Less flexible and hence will give improved prediction accuracy when its increase in bias is less than its decrease in variance.
+  
+  b) iii. Less flexible and hence will give improved prediction accuracy when its increase in bias is less than its decrease in variance.
+3. Lasso Regression
+a) iv. Steadily decreases: As s increases from 0, there is less contraint and greater flexibility in the model. As $\beta$s increase from 0 towards their least squares estimates, the training error, RSS, should generally continue to decrease from its initial high value as well. 
+   b) ii. Decreases initially, and then eventually starts increasing in a U shape: As s increases from 0, and the $\beta$s in the model increase from 0, the greater flexibility of the model may produce less test error in the RSS. However, over time, as the $\beta$s in the model approach their least squares estimates, the model will begin to overfit 
+   c) iii. Steadily increases: Variances generally increases with greater model flexibility as moe $\beta$s are incorporated and increased.
+   d) iv. Steadily decreases: Bias generally decreases with greater model flexibility as more $\beta$s are incorporated and increased.
+   e) v. Remain constant: Irreducible error is independent of model selection. 
+4. Ridge Regression
+a) iii. Steadily increases: As $\lambda$ increases from 0, there is greater constraint and heavier penalty in the model. Subseuqently, the training error, RSS, should generally continue to increase as well as $\beta$s are reduced towards zero from their OLS estimates and begin to fit the training data less accurately.
+b) ii. Decreases initially, and then eventually starts increasing in a U shape: As $\lambda$ increases from 0, the $\beta$s in the model will shrink from their least squares estimates towards zero, generating a decrease in overfitting as well as the test error, RSS. However, over time, the model may become too simple, subsquently causing an eventual inrease in test error. 
+  c) iv. Steadily decreases: With less flexibility and more constraints to the model, variance will decrease.  When $\lambda$ is 0, $\beta$s correspond to the least square estimates that reflect the high variance of the training data. Consequently, as $\beta$s shrink towards zero, variance decreases as well.
+  d) iii. Steadily increases: Conversely, bias generally increases with less model flexibility as   $\beta$s are reduced from their least square estimates -- which carry minimal bias -- towards zero. 
+  e) v. Remain constant: Irreducible error remains the same regardless of maodel selection.
+6.
+```{r}
+#Part a)
+y = 3
+lambda = 3
+betas = seq( from=-10, to=+10, length.out=200 )
+func = (y - betas)^2 + lambda * betas^2
+plot(betas, func, pch = 20, xlab = "beta", ylab = "Ridge optimization")
+#plot point 
+pt.beta = y/(1 + lambda)  #show that this is true
+y_opt = (y - pt.beta)^2 + lambda * pt.beta^2
+points(pt.beta, y_opt, col = "red", pch = 4, lwd = 5, cex = pt.beta)
+
+#Part b)
+y1 = 3
+lambda1 = 3
+betas1 = seq( from=-10, to=+10, length.out=200 )
+func1 = (y1-betas1)^2 + lambda1 * abs(betas1)
+plot(betas1, func1, pch = 20, xlab = "beta", ylab = "Lasso optimization")
+#plot point 
+pt.beta1 = y1 - lambda1/2  #show that this is true since y1 > lambda1/2
+y_opt1 = (y-pt.beta1)^2 + lambda1 * abs(pt.beta1)
+points(pt.beta1, y_opt1, col = "red", pch = 4, lwd = 5, cex = pt.beta1)
+
+
+```
+
