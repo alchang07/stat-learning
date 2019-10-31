@@ -1,0 +1,99 @@
+---
+title: "activity-03"
+author: "Alice Chang and Sarah Maebius"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(MASS)
+data(Default)
+
+```
+
+
+```{r}
+
+
+set.seed(42)
+k <- 2
+partition_index <- rep(1:k, each = nrow(Default)/k) %>% 
+sample()
+MCR_i <- rep(NA, k)
+Default$partition_index <- partition_index
+for(i in 1:k) {
+  train <- Default[Default$partition_index == i,]
+  test <- Default[Default$partition_index != i,]
+  glm.fit = glm(default ~ balance, data = train, family = binomial)
+  pd <- predict(glm.fit, newdata = test, type = "response") 
+  my_pred <- ifelse(pd < 0.5, "No","Yes")
+  conf <- table(my_pred, test$default)
+  MCR_i <- (conf[2, 1] + conf_log[1, 2])/nrow(Default_test)
+
+  }
+
+MCR1 = mean(MCR_i)
+MCR1
+
+# pd = pd > 0.5
+ # MCR_i[i] = sum(pd!= (test$default == "Yes"))/sum(test)[i])
+
+
+
+```
+For k = 2, the misclassification rate is 0.015
+## 
+
+
+
+```{r}
+set.seed(42)
+k <- 5
+partition_index <- rep(1:k, each = nrow(Default)/k) %>% 
+sample()
+MCR_i <- rep(NA, k)
+Default$partition_index <- partition_index
+for(i in 1:k) {
+  train <- Default[Default$partition_index == i,]
+  test <- Default[Default$partition_index != i,]
+  glm.fit = glm(default ~ balance, data = train, family = binomial)
+  pd <- predict(glm.fit, newdata = test, type = "response") 
+  my_pred <- ifelse(pd < 0.5, "No","Yes")
+  conf <- table(my_pred, test$default)
+  MCR_i <- (conf[2, 1] + conf_log[1, 2])/nrow(Default_test)
+
+  }
+
+MCR2 = mean(MCR_i)
+MCR2
+
+set.seed(42)
+k <- 10
+partition_index <- rep(1:k, each = nrow(Default)/k) %>% 
+sample()
+MCR_i <- rep(NA, k)
+Default$partition_index <- partition_index
+for(i in 1:k) {
+  train <- Default[Default$partition_index == i,]
+  test <- Default[Default$partition_index != i,]
+  glm.fit = glm(default ~ balance, data = train, family = binomial)
+  pd <- predict(glm.fit, newdata = test, type = "response") 
+  my_pred <- ifelse(pd < 0.5, "No","Yes")
+  conf <- table(my_pred, test$default)
+  MCR_i <- (conf[2, 1] + conf_log[1, 2])/nrow(Default_test)
+
+  }
+
+MCR_3 = mean(MCR_i)
+MCR_3
+
+
+
+
+
+
+
+
+
+```
+For k = 5, the misclassification rate is 0.0202
+For k = 10, the misclassification rate is 0.0246
