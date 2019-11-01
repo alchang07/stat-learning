@@ -1,8 +1,7 @@
 ---
 title: "activity-03"
 author: "Alice Chang and Sarah Maebius"
-output: pdf_document
----
+output: html_document
 
 ```{r setup, include=FALSE}
 library(MASS)
@@ -21,8 +20,8 @@ sample()
 MCR_i <- rep(NA, k)
 Default$partition_index <- partition_index
 for(i in 1:k) {
-  train <- Default[Default$partition_index == i,]
-  test <- Default[Default$partition_index != i,]
+  test <- Default[Default$partition_index == i,]
+  train <- Default[Default$partition_index != i,]
   glm.fit = glm(default ~ balance, data = train, family = binomial)
   pd <- predict(glm.fit, newdata = test, type = "response") 
   my_pred <- ifelse(pd < 0.5, "No","Yes")
@@ -40,7 +39,7 @@ MCR1
 
 
 ```
-For k = 2, the misclassification rate is 0.015
+For k = 2, the misclassification rate is 0.011
 ## 
 
 
@@ -53,8 +52,8 @@ sample()
 MCR_i <- rep(NA, k)
 Default$partition_index <- partition_index
 for(i in 1:k) {
-  train <- Default[Default$partition_index == i,]
-  test <- Default[Default$partition_index != i,]
+  test <- Default[Default$partition_index == i,]
+  train <- Default[Default$partition_index != i,]
   glm.fit = glm(default ~ balance, data = train, family = binomial)
   pd <- predict(glm.fit, newdata = test, type = "response") 
   my_pred <- ifelse(pd < 0.5, "No","Yes")
@@ -73,8 +72,8 @@ sample()
 MCR_i <- rep(NA, k)
 Default$partition_index <- partition_index
 for(i in 1:k) {
-  train <- Default[Default$partition_index == i,]
-  test <- Default[Default$partition_index != i,]
+  test <- Default[Default$partition_index == i,]
+  train <- Default[Default$partition_index != i,]
   glm.fit = glm(default ~ balance, data = train, family = binomial)
   pd <- predict(glm.fit, newdata = test, type = "response") 
   my_pred <- ifelse(pd < 0.5, "No","Yes")
@@ -95,5 +94,5 @@ MCR_3
 
 
 ```
-For k = 5, the misclassification rate is 0.0202
-For k = 10, the misclassification rate is 0.0246
+For k = 5, the misclassification rate is 0.0102
+For k = 10, the misclassification rate is 0.009
