@@ -26,7 +26,7 @@ for(i in 1:k) {
   pd <- predict(glm.fit, newdata = test, type = "response") 
   my_pred <- ifelse(pd < 0.5, "No","Yes")
   conf <- table(my_pred, test$default)
-  MCR_i <- (conf[2, 1] + conf_log[1, 2])/nrow(Default_test)
+  MCR_i <- (conf[2, 1] + conf_log[1, 2])/nrow(test)
 
   }
 
@@ -58,7 +58,7 @@ for(i in 1:k) {
   pd <- predict(glm.fit, newdata = test, type = "response") 
   my_pred <- ifelse(pd < 0.5, "No","Yes")
   conf <- table(my_pred, test$default)
-  MCR_i <- (conf[2, 1] + conf_log[1, 2])/nrow(Default_test)
+  MCR_i <- (conf[2, 1] + conf_log[1, 2])/nrow(test)
 
   }
 
@@ -78,7 +78,7 @@ for(i in 1:k) {
   pd <- predict(glm.fit, newdata = test, type = "response") 
   my_pred <- ifelse(pd < 0.5, "No","Yes")
   conf <- table(my_pred, test$default)
-  MCR_i <- (conf[2, 1] + conf_log[1, 2])/nrow(Default_test)
+  MCR_i <- (conf[2, 1] + conf_log[1, 2])/nrow(test)
 
   }
 
@@ -94,5 +94,5 @@ MCR_3
 
 
 ```
-For k = 5, the misclassification rate is 0.0102
-For k = 10, the misclassification rate is 0.009
+For k = 5, the misclassification rate is 0.0255
+For k = 10, the misclassification rate is 0.045
