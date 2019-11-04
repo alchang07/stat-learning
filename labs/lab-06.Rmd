@@ -3,6 +3,7 @@ title: "Lab 6"
 author: "Alice Chang"
 subtitle: Hands off my stack
 output:
+  pdf_document: default
   html_document:
     df_print: paged
 ---
@@ -47,7 +48,7 @@ for(i in 1:k) {
 
   }
 
-s
+
 
 
 
@@ -238,7 +239,7 @@ summary(fit4)
 ```
 
 n = 100 and p = 2
-Y = X - 2$X^2$ + ε
+Y = X - 2$X^2$ + $\epsilon$
 
 b) There is a curved relationship between x and y. Initially, there is a positively correlated relationship between x and y as y increases as x increases. However, once x is greater than 0, there is a negatively correlated relationship between x and y as an increase in x is assocaited with a decrease in y. 
 
