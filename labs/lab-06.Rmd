@@ -1,0 +1,261 @@
+---
+title: "Lab 6"
+author: "Alice Chang"
+subtitle: Hands off my stack
+output:
+  html_document:
+    df_print: paged
+---
+
+
+* * *
+
+#### Inventing a variable
+
+```{r}
+#load data
+library(MASS)
+library(dplyr)
+library(ggplot2)
+
+d <- read.csv("https://bit.ly/36kibHZ")
+#add column MAPE to dataframe
+MAPE <- d$Price / d$Earnings_10MA_back
+d$MAPE <- MAPE
+summary(MAPE)
+
+#Remove all rows with missing data
+d <- na.omit(d)
+
+#build linear model with MAPE
+m1 <- lm(Return_10_fwd ~ MAPE, data = d)
+summary(m1)
+#Calculate MSE for five-fold CV
+set.seed(42)
+d <- d[-sample(1:nrow(d), 4), ]
+k <- 5
+partition_index <- rep(1:k, each = nrow(d)/k) %>% 
+sample()
+MSE_i <- rep(NA, k)
+d$partition_index <- partition_index
+for(i in 1:k) {
+  test <- d[d$partition_index == i, ]
+  train <- d[d$partition_index != i,]
+  lm1 <- lm(Return_10_fwd ~ MAPE, data = train)
+  pd <- predict(lm1, newdata = test, type = "response") 
+  MSE_i <- mean((test$Return_10_fwd-pd)^2)
+
+  }
+
+s
+
+
+
+
+```
+
+1. There are exactly 120 NAs because "Earnings_10_MA_back" measures the ten-year moving average of earnings looking back from the current date. We do not have any earnings data for the previous ten years before 1871 that allows us to have information for the ten-year moving average for the first ten years. There is no data available for the ten-year moving average of earnings until 10 years later in 1871. Each row in the dataset represents one month of each of the 12 months in the year, and there are 10 years of mising data. Accordingly, 12 X 10 = 120, so there are exactly 120 NAs in both "Earnings_10MA_back" and "MAPE."
+
+2. As evident in the linear model, the coefficient of MAPE is  -0.004602  and its standard error is 0.000173 . This means that for every unit increase in "MAPE" (the ratio of "Price,"  the index of U.S. stocks, to "Earnings_10MA_back," the ten year moving average of earnings), the average rate of return over the next ten years from the current data, "Return_10_fwd," should decrease by 0.004602  units. Moreovr, this rate of return can vary by 0.000173. Since P < 2e-16, the effect of MAPE is statistically significant. 
+
+3. The MSE of the model under a five-fold CV is 0.001907637.  
+
+
+#### Inverting a variable
+
+```{r}
+#Create inverted variable
+Inv_MAPE <- 1 / d$MAPE
+d$Inv_MAPE <- Inv_MAPE
+
+
+#Fit model with Inv_MAPE
+m2 <- lm(Return_10_fwd ~ Inv_MAPE, data = d)
+summary(m2)
+
+#Find five-fold CV MSE
+for(i in 1:k) {
+  test <- d[d$partition_index == i, ]
+  train <- d[d$partition_index != i,]
+  lm2 <- lm(Return_10_fwd ~ Inv_MAPE, data = train)
+  pd2 <- predict(lm2, newdata = test, type = "response") 
+  MSE_i <- mean((test$Return_10_fwd-pd2)^2)
+
+  }
+
+MSE = mean(MSE_i)
+MSE
+
+
+```
+1. As evident in the linear model, the coefficient of Inv_MAPE is 0.997627 and its standard error is 0.036567 . This means that for every unit increase in "Inv_MAPE" (1 divided by the ratio of "Price,"  the index of U.S. stocks, to "Earnings_10MA_back," the ten year moving average of earnings), the average rate of return over the next ten years from the current data, "Return_10_fwd," should increase by 0.997627 units. Moreovr, this rate of return can vary by 0.036567. Since P < 2e-16, the effect of Inv_MAPE is statistically significant. 
+
+2. The CV MSE for this model is 0.001876906 which is only slightly smaller than the CV MSE of the previous model. 
+
+#### A simple model
+
+```{r}
+
+
+for(i in 1:k) {
+  test <- d[d$partition_index == i, ]
+  train <- d[d$partition_index != i,]
+  MSE_i <- mean((train$Return_10_fwd-train$Inv_MAPE)^2)
+}
+
+MSE = mean(MSE_i)
+MSE
+
+for(i in 1:k) {
+  test <- d[d$partition_index == i, ]
+  train <- d[d$partition_index != i,]
+  MSE_i <- mean((test$Return_10_fwd-test$Inv_MAPE)^2)
+
+  }
+
+MSE = mean(MSE_i)
+MSE
+
+
+
+
+```
+
+
+
+1. The training MSE for this model is 0.001892635. This is exactly the same as the CV test MSE for this model. 
+
+2. The test and training MSE for this model are practicaly equivalent because they both end up evaluating the difference between 1/MAPE and the actualreturns in the dataset. In other words, 1/MAPE serves as the predicted obstervations for "Returns" in both the test and training data. 
+
+#### Is simple sufficient?
+
+```{r}
+betas <- rep(NA, 5000)
+for(i in 1:5000) {
+  boot_ind <- sample(1:nrow(d), 
+                     size = nrow(d), 
+                     replace = TRUE)
+  d_boot <- d[boot_ind, ]
+  betas[i] <- coef(lm(Return_10_fwd ~ Inv_MAPE, data = d_boot))[2]
+}
+
+
+#Graoh results
+df <- data.frame(betas)
+ggplot(df, aes(betas)) +
+  geom_histogram(col = "white") + geom_vline(xintercept= (-0.02), color="red")
+  theme_bw() 
+
+#Obtain 95% bootstrap confidence interval
+m_boot = lm(Return_10_fwd ~ Inv_MAPE, data = d_boot)
+confint(m_boot, level = 0.95)
+
+
+
+
+
+```
+The 95% bootstrap confidence interval for the slope of 1/MAPE is between 0.93862423 and  1.068285499. 
+In comparision, through directly running confint() on the function in questino 2, we are 95% certain that the slope for 1/MAPE falls between 0.92589823 and 1.069356445. The lower limit of the 95% bootstrap confidence interval is only slightly higher than the interval obtained through the second method. However, the upper limit of the 95% bootstrap confidence interval is very slightly lower than the interval obtained through the second method. Consequently the confidence intervals are extremely for the slope of 1/MAPE are extremely similar. 
+
+```{r}
+
+#m1 <- lm(Return_10_fwd ~ MAPE, data = d)
+#m2 <- lm(d$Return_10_fwd ~ d$Inv_MAPE, data = d)
+predict(m1, newdata = data.frame(MAPE = 50), type = "response")
+predict(m1, newdata = data.frame(MAPE =5), type = "response")
+
+m2 <- lm(Return_10_fwd ~ Inv_MAPE, data = d)
+
+predict(m2, newdata = data.frame(Inv_MAPE = 1/50), type = "response")
+predict(m2, newdata = data.frame(Inv_MAPE =1/5), type = "response")
+
+ggplot(d, aes(x = MAPE, y = Return_10_fwd)) + geom_point() + geom_curve(aes(x = 5, y = 0.1155154, xend = 50, yend =--0.09155539   , colour = "red")) + geom_curve(aes(x = 5, y =0.1917101 , xend = 50, yend =-0.01213715,colour = "blue"))  + geom_curve(aes(x = 5, y =0.2 , xend = 50, yend =-0.02 , colour = "green")) + scale_color_manual(name = "Model", values = c("blue", "red", "green"), labels = c("Model 2","Model 1", "Simple Model")) 
+
+summary(m1)
+summary(m2)
+
+
+```
+Model 1 and Model 2 seem to fit the trend of the orginal dataset most closely. Comparatively the simple model seems to slighly underestimate returns when MAPE is lower and overestimate returns when MAPE is higher. 
+The predictions from Model1 and Model 2 are very close to each other and follow the negatively correlated relationship between MAPE and returns, demonstrating how returns tend to decrease as the ratio between price and earnings increases. 
+
+
+#### The big picture
+
+1. Since Model 2 has the lowest CV MSE of 0.0018769, I would select the model to make predictions on returns. Furthermore, looking at the plot from question 5, this seems to be a good model. This model considers the ratio of the ten year moving average of earnings to the index of U.S. stocks.However, it seems to have a slightly larger standard error than the slope of MAPE in model 1 and there is more variation in slopes for 1/MAPE. 
+
+2.Based off my bootstrapping procedure for the slope of the linear model using 1/MAPE as a predictor, the simple-minded model does not seem very plausible given the data. The approximate slope of the simple-minded model seems to lie a little below 0. This is very far from the slope estimates determined from the bootstrap distribution. 
+
+
+#### Chapter 5 exercises
+
+4. The standard deviation of the predicted observation can be estimatted through the bootstrap approach. Correspondingly, we would generate many random samples from our original dataset, sampling for replacement each time, and record the estimates for the standard deviation each time. Afterwards, we would find the mean of the estimates from each time and the standard deviation across all estimates. 
+
+
+8. 
+```{r}
+set.seed(1)
+x = rnorm(100)
+y = x-2 * x^2 + rnorm(100)
+
+plot(x,y)
+
+#c
+library(boot)
+set.seed(2)
+Data <- data.frame(x, y)
+fit1 <- glm(y ~ x)
+cv.glm(Data, fit1)$delta[1]
+
+fit2 <- glm(y ~ poly(x, 2))
+cv.glm(Data, fit2)$delta[1]
+
+fit3 <- glm(y ~ poly(x, 3))
+cv.glm(Data, fit3)$delta[1]
+
+fit4 <- glm(y ~ poly(x, 4))
+cv.glm(Data, fit4)$delta[1]
+
+
+set.seed(19)
+fit5 <- glm(y ~ x)
+cv.glm(Data, fit5)$delta[1]
+
+fit6 <- glm(y ~ poly(x, 2))
+cv.glm(Data, fit6)$delta[1]
+
+fit7 <- glm(y ~ poly(x, 3))
+cv.glm(Data, fit7)$delta[1]
+
+fit8 <- glm(y ~ poly(x, 4))
+cv.glm(Data, fit8)$delta[1]
+
+summary(fit1)
+summary(fit2)
+summary(fit3)
+summary(fit4)
+```
+
+n = 100 and p = 2
+Y = X - 2$X^2$ + ε
+
+b) There is a curved relationship between x and y. Initially, there is a positively correlated relationship between x and y as y increases as x increases. However, once x is greater than 0, there is a negatively correlated relationship between x and y as an increase in x is assocaited with a decrease in y. 
+
+c) Compute LOOCV errors:
+i. 7.288162
+ii. 0.9374236
+iii.0.9566218
+iv. 0.9539049
+
+d) Compute LOOCV errors:
+i. 7.288162
+ii. 0.9374236
+iii.0.9566218
+iv. 0.9539049
+
+The results are exactly the same as the results from (c). This is because LOOCV uses a single observation as a validation set.
+
+e) "Fit2" had the smallest LOOCV error. This is not surprising because the scatterplot from b demonstrates that the relationship between x and y is quadratic. 
+
+f) After fitting each of the models, it is clear that the linear and quadratic terms are consistently statistically significants. However, the cubic and 4th degree terms are not. Consequently, the results agree with our cross-validation results in which the quadratic ("fit2") model had the least LOOCV error. 
