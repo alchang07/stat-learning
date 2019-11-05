@@ -44,9 +44,13 @@ for(i in 1:k) {
   train <- d[d$partition_index != i,]
   lm1 <- lm(Return_10_fwd ~ MAPE, data = train)
   pd <- predict(lm1, newdata = test, type = "response") 
-  MSE_i <- mean((test$Return_10_fwd-pd)^2)
+  MSE_i[i] <- mean((test$Return_10_fwd-pd)^2)
 
   }
+
+
+MSE = mean(MSE_i)
+MSE
 
 
 
@@ -59,7 +63,7 @@ for(i in 1:k) {
 
 2. As evident in the linear model, the coefficient of MAPE is  -0.004602  and its standard error is 0.000173 . This means that for every unit increase in "MAPE" (the ratio of "Price,"  the index of U.S. stocks, to "Earnings_10MA_back," the ten year moving average of earnings), the average rate of return over the next ten years from the current data, "Return_10_fwd," should decrease by 0.004602  units. Moreovr, this rate of return can vary by 0.000173. Since P < 2e-16, the effect of MAPE is statistically significant. 
 
-3. The MSE of the model under a five-fold CV is 0.001907637.  
+3. The MSE of the model under a five-fold CV is 0.001868484.  
 
 
 #### Inverting a variable
@@ -75,12 +79,13 @@ m2 <- lm(Return_10_fwd ~ Inv_MAPE, data = d)
 summary(m2)
 
 #Find five-fold CV MSE
+MSE_i <- rep(NA, k)
 for(i in 1:k) {
   test <- d[d$partition_index == i, ]
   train <- d[d$partition_index != i,]
   lm2 <- lm(Return_10_fwd ~ Inv_MAPE, data = train)
   pd2 <- predict(lm2, newdata = test, type = "response") 
-  MSE_i <- mean((test$Return_10_fwd-pd2)^2)
+  MSE_i[i] <- mean((test$Return_10_fwd-pd2)^2)
 
   }
 
@@ -89,28 +94,31 @@ MSE
 
 
 ```
-1. As evident in the linear model, the coefficient of Inv_MAPE is 0.997627 and its standard error is 0.036567 . This means that for every unit increase in "Inv_MAPE" (1 divided by the ratio of "Price,"  the index of U.S. stocks, to "Earnings_10MA_back," the ten year moving average of earnings), the average rate of return over the next ten years from the current data, "Return_10_fwd," should increase by 0.997627 units. Moreovr, this rate of return can vary by 0.036567. Since P < 2e-16, the effect of Inv_MAPE is statistically significant. 
+1. As evident in the linear model, the coefficient of Inv_MAPE is 0.997627 and its standard error is 0.036567 . This means that for every unit increase in "Inv_MAPE" (the ratio of "Earnings+10MA_back," the ten year moving average of earnings to "Price,"  the index of U.S. stocks), the average rate of return over the next ten years from the current data, "Return_10_fwd," should increase by 0.997627 units. Moreovr, this rate of return can vary by 0.036567. Since P < 2e-16, the effect of Inv_MAPE is statistically significant. 
 
-2. The CV MSE for this model is 0.001876906 which is only slightly smaller than the CV MSE of the previous model. 
+2. The CV MSE for this model is  0.001836749 which is slightly smaller than the CV MSE of the previous model. 
 
 #### A simple model
 
 ```{r}
-
+k <- 5
+MSE_i <- rep(NA, k)
 
 for(i in 1:k) {
   test <- d[d$partition_index == i, ]
   train <- d[d$partition_index != i,]
-  MSE_i <- mean((train$Return_10_fwd-train$Inv_MAPE)^2)
+  MSE_i[i] <- mean((train$Return_10_fwd-train$Inv_MAPE)^2)
 }
 
 MSE = mean(MSE_i)
 MSE
 
+MSE_i <- rep(NA, k)
+
 for(i in 1:k) {
   test <- d[d$partition_index == i, ]
   train <- d[d$partition_index != i,]
-  MSE_i <- mean((test$Return_10_fwd-test$Inv_MAPE)^2)
+  MSE_i[i] <- mean((test$Return_10_fwd-test$Inv_MAPE)^2)
 
   }
 
@@ -124,9 +132,9 @@ MSE
 
 
 
-1. The training MSE for this model is 0.001892635. This is exactly the same as the CV test MSE for this model. 
+1. The training MSE for this model is 0.001898626. This is exactly the same as the CV test MSE for this model. 
 
-2. The test and training MSE for this model are practicaly equivalent because they both end up evaluating the difference between 1/MAPE and the actualreturns in the dataset. In other words, 1/MAPE serves as the predicted obstervations for "Returns" in both the test and training data. 
+2. In most cases, we train our model on the training data and fit the derived model onto our test data afterwards, so that our training MSE may be lower than our test MSE at times. However, the training MSE and test MSE for this simple model are equivalent because we are not simply fitting a model derived from our training data onto the test data. Instead, in both the test and training data, we are evaluating the suggestion that 1/MAPE is equal to the average rate of return over the next ten years. Consequently, we would expect this MSE to be the same across the entire dataset. 
 
 #### Is simple sufficient?
 
@@ -143,50 +151,54 @@ for(i in 1:5000) {
 
 #Graoh results
 df <- data.frame(betas)
+
 ggplot(df, aes(betas)) +
-  geom_histogram(col = "white") + geom_vline(xintercept= (-0.02), color="red")
-  theme_bw() 
+  geom_histogram(col = "white") +  theme_bw() + geom_vline(xintercept= 1, color="red")
+ 
 
 #Obtain 95% bootstrap confidence interval
 m_boot = lm(Return_10_fwd ~ Inv_MAPE, data = d_boot)
+summary(m_boot)
 confint(m_boot, level = 0.95)
 
 
 
+confint(m2, level = 0.95)
 
 
 ```
-The 95% bootstrap confidence interval for the slope of 1/MAPE is between 0.93862423 and  1.068285499. 
-In comparision, through directly running confint() on the function in questino 2, we are 95% certain that the slope for 1/MAPE falls between 0.92589823 and 1.069356445. The lower limit of the 95% bootstrap confidence interval is only slightly higher than the interval obtained through the second method. However, the upper limit of the 95% bootstrap confidence interval is very slightly lower than the interval obtained through the second method. Consequently the confidence intervals are extremely for the slope of 1/MAPE are extremely similar. 
+The 95% bootstrap confidence interval for the slope of 1/MAPE is between  0.96444846 and  1.106315186. 
+In comparision, through directly running confint() on the function in questino 2, we are 95% certain that the slope for 1/MAPE falls between 0.92589823 and 1.069356445. The lower limit of the 95% bootstrap confidence interval is only slightly higher than the interval obtained through the second method. However, the upper limit of the 95% bootstrap confidence interval is very slightly lower than the interval obtained through the second method. Consequently the confidence intervals for the slope of 1/MAPE are extremely similar. 
 
 ```{r}
-
-#m1 <- lm(Return_10_fwd ~ MAPE, data = d)
-#m2 <- lm(d$Return_10_fwd ~ d$Inv_MAPE, data = d)
-predict(m1, newdata = data.frame(MAPE = 50), type = "response")
-predict(m1, newdata = data.frame(MAPE =5), type = "response")
-
-m2 <- lm(Return_10_fwd ~ Inv_MAPE, data = d)
-
-predict(m2, newdata = data.frame(Inv_MAPE = 1/50), type = "response")
-predict(m2, newdata = data.frame(Inv_MAPE =1/5), type = "response")
-
-ggplot(d, aes(x = MAPE, y = Return_10_fwd)) + geom_point() + geom_curve(aes(x = 5, y = 0.1155154, xend = 50, yend =--0.09155539   , colour = "red")) + geom_curve(aes(x = 5, y =0.1917101 , xend = 50, yend =-0.01213715,colour = "blue"))  + geom_curve(aes(x = 5, y =0.2 , xend = 50, yend =-0.02 , colour = "green")) + scale_color_manual(name = "Model", values = c("blue", "red", "green"), labels = c("Model 2","Model 1", "Simple Model")) 
-
-summary(m1)
 summary(m2)
+summary(m1)
 
+simple_mod <- function(MAPE) {
+  1/MAPE
+}
 
+second_mod <- function(MAPE) {
+  -0.007815 +  (0.997627 * 1/MAPE)
+}
+
+first_mod <- function(MAPE) {
+    0.1383475 + (-0.0045885 * MAPE)
+  }
+
+ggplot(d, aes(x = MAPE, y = Return_10_fwd)) + geom_point() + stat_function(fun = simple_mod, color = "red") + stat_function(fun = second_mod, color = "blue") + stat_function(fun = first_mod, color = "green") 
 ```
-Model 1 and Model 2 seem to fit the trend of the orginal dataset most closely. Comparatively the simple model seems to slighly underestimate returns when MAPE is lower and overestimate returns when MAPE is higher. 
-The predictions from Model1 and Model 2 are very close to each other and follow the negatively correlated relationship between MAPE and returns, demonstrating how returns tend to decrease as the ratio between price and earnings increases. 
+All three models capture the mostly negatively correlated relationship between MAPE and the average rate of return over the next 10 yeras of the original dataset. However, Model 2 and the simple model capture a slighltly curvilinear relationship betwee MAPE and the rate of return. Comparatively, Model 1 represents a linear relationship between MAPE and the rate of return. As MAPE increases, the average rate of return decrease consistently. 
 
 
 #### The big picture
+```{r}
+mean(betas)
+```
 
-1. Since Model 2 has the lowest CV MSE of 0.0018769, I would select the model to make predictions on returns. Furthermore, looking at the plot from question 5, this seems to be a good model. This model considers the ratio of the ten year moving average of earnings to the index of U.S. stocks.However, it seems to have a slightly larger standard error than the slope of MAPE in model 1 and there is more variation in slopes for 1/MAPE. 
+1. Since Model 2 has the lowest CV MSE of 0.0018769, I would select the model to make predictions on returns. Looking at the plot from question 5, Model 2 is able to capture the slighty curvilinear relationship between MAPE and the average rate of returns, subsequently seeming to be a pretty good model. Furthermore, in contrast to Model 1, Model 2 better estimates the higher average rate of returns when MAPE (the ration between "Price" and "Earnings") is small. However, Model 2 does not model the slight curvature of the data accurately, subsequently tending to overestimate the average rate of returns when MAPE is larger. 
 
-2.Based off my bootstrapping procedure for the slope of the linear model using 1/MAPE as a predictor, the simple-minded model does not seem very plausible given the data. The approximate slope of the simple-minded model seems to lie a little below 0. This is very far from the slope estimates determined from the bootstrap distribution. 
+2.Based off my bootstrapping procedure for the slope of the linear model using 1/MAPE as a predictor, the simple-minded model is very plausible given the data. It follows from the suggestion that the average rate of return over the next 10 years is equal to 1/MAPE that the slope of the simple-minded model is 1. This is very close to the mean of the slope estimates determined from the bootstrap distribution of slope for 1/MAPE in Model 2 (0.9980164). 
 
 
 #### Chapter 5 exercises
