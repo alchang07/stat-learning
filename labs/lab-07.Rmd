@@ -1,0 +1,167 @@
+---
+title: "Lab 7"
+subtitle: "When a guest arrives they will count how many sides it has on"
+author: "Alice Chang"
+output: pdf_document
+---
+* * *
+
+#### Growing the full classification tree
+
+```{r}
+# Load data
+library(MASS)
+library(dplyr)
+library(tree)
+set.seed(75)
+n <- 16
+x1 <- runif(n)
+x2 <- runif(n)
+group <- as.factor(sample(1:3, n, replace = TRUE))
+levels(group) <- c("circle", "triangle", "square")
+df <- data.frame(x1, x2, group)
+df[1, 2] <- .765 # tweaks to make a more interesting configuration
+df[9, 1] <- .741
+df <- df[-7, ]
+
+library(ggplot2)
+ggplot(df, aes(x = x1, y = x2, col = group, shape = group)) +
+  geom_point(size = 4) +
+  scale_x_continuous(expand = c(0, 0) , limits = c(0, 1)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  scale_color_discrete(guide = FALSE) +
+  scale_shape_discrete(guide = FALSE) +
+  theme_bw()
+
+#Fit tree w/ Gini
+t1 <- tree(group ~ ., 
+           data = df, split = "gini")
+summary(t1)
+plot(t1)
+text(t1, pretty = 0)
+```
+1. Neither the horizontal split around x2 = 0.5 nor the vertical split around x1 = 0.30 were decided upon by my classification tree as the first split. However, the classification tree's identification of the first split at x2 = 0.352967 is somewhat close to the first horizontal split commonly identified in class. 
+2. As a "greedy" model, the tree decides splits to ensure optimal node purity, so at times it does not consider every possible split. While the second split of the tree at x2 = 0.650272 predicts sqare for x2 >  0.650272 as well as x2 < 0.650272, the split ensures optimal node purity in each region. 
+3. It would predict a square. 
+
+#### An alternate metric
+
+```{r}
+t2 <- tree(group ~ ., 
+           data = df, split = "deviance")
+summary(t2)
+plot(t2)
+text(t2, pretty = 0)
+```
+The Gini index measures the probabiltiy that a variable will be wrongly classified if it is randomly chosen. As the Gini index measures total variance across the K classes, a model based on the Gini index decides optimal splits that ensure node purity. In contrast to the Gini Index, the deviance metric is able to perform model comparison and select a model that minimizes the size of the tree while also optimizing the goodness of fit to the training data.  
+
+
+## Crime and Communities, revisited
+#### Growing a pruned regression tree
+
+```{r}
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+
+d_cleaned <- data.frame("blank" = rep(0, nrow(d)))
+counter <- 1
+
+for(i in 5:ncol(d)){
+  if(d[1, i] != "?"){
+    d_cleaned[[counter]] <- d[[i]]
+    colnames(d_cleaned)[counter] <- colnames(d)[i]
+    counter <- counter + 1
+  }
+}
+t3 <- tree(ViolentCrimesPerPop ~ ., 
+           data = d_cleaned)
+
+summary(t3)
+plot(t3)
+text(t3, pretty = 0)
+
+set.seed(40)
+t3cv <- cv.tree(t3)
+t3cv
+
+plot(t3cv$size, t3cv$dev, type = "b")
+t3cv$size[which.min(t3cv$dev)]
+prune.t3 = prune.tree(t3, best = 11)
+plot(prune.t3)
+text(prune.t3, pretty = 0)
+
+
+```
+
+
+#### Comparing predictive performance
+
+```{r}
+#load test data
+test_data <- read.csv("https://bit.ly/2PYS8Ap")
+#clean test_data
+
+
+crime_test <- data.frame("blank" = rep(0, nrow(test_data)))
+counter <- 1
+
+for(i in 5:ncol(test_data)){
+  if(test_data[1, i] != "?"){
+    crime_test[[counter]] <- test_data[[i]]
+    colnames(crime_test)[counter] <- colnames(test_data)[i]
+    counter <- counter + 1
+  }
+}
+#predict into test data
+yhat_tree = predict(t3, crime_test)
+
+tree_MSE <- mean((yhat_tree-crime_test$ViolentCrimesPerPop)^2)
+tree_MSE
+
+#group A test MSE
+
+lm <- lm(sqrt(ViolentCrimesPerPop)~ PctIlleg +
+racePctWhite +
+TotalPctDiv +
+PctVacantBoarded:racePctWhite +
+LemasPctOfficDrugUn +
+MedRentPctHousInc +
+PctNotHSGrad, data = d_cleaned)
+
+lm_test_mse <- mean((sqrt(crime_test$ViolentCrimesPerPop) - predict(lm, crime_test))^2)
+  
+lm_test_mse
+
+
+```
+Using the pruned regression tree, the test MSE is 0.01544466. This is slightly lower than the test MSE resulting from our group's regression model which was around 0.01647594. 
+
+#### Growing a random forest
+
+```{r}
+library(randomForest)
+#bagging
+library(dplyr)
+#glimpse(d_cleaned)
+set.seed(1)
+bag.crime = randomForest(ViolentCrimesPerPop ~., data = d_cleaned, mtry = 100, importance = TRUE)
+
+yhat.bag = predict(bag.crime, newdata = test_data)
+mean((yhat.bag - test_data$ViolentCrimesPerPop)^2)
+
+set.seed(1)
+rf.crime = randomForest(ViolentCrimesPerPop ~., data = d_cleaned, mtry = 100/3, importance = TRUE)
+
+yhat.rf = predict(rf.crime, newdata = test_data)
+mean((yhat.rf - test_data$ViolentCrimesPerPop)^2)
+```
+
+Both test MSEs were an improvement over the vanilla pruned regression tree (0.01544466) as well as our group's regression model(0.01647594). The test MSE from bagging was 0.003120125, while the test MSE from the second random forest model was slightly higher at 0.003194281.
+
+#### Variable importance
+
+```{r}
+importance(rf.crime)
+varImpPlot(rf.crime)
+summary(lm)
+```
+The results indicate that racePctWhite, PctIlleg, NumIlleg, PctKids2Par, and PctFam2Par are particularly important variables. In accordance with these results, the regression coefficients from our group's model also show that the proportion of whites, racePctWhite, and undocumented residents, PctIlleg, in the population are particularly influential in the decrease in violent crime in the area ($\beta_2$ = -0.28866 and $\beta_1$ =  0.19180). However, our logistic regression model identifies TotalPctDiv ($\beta_3$ = 0.38817) as the most influential variable, while the variable importance plot does not register its particular importance. LemasPctOfficeDrugUn, MedRentPctHousInc, PctNotHSGrad have smaller regression coefficients in the logistic regression model ($\beta_4$ =  0.07830,$\beta_5$ = 0.10998, $\beta_6$ =0.11382 ) and do not register as particularly important variables in the variable importance plot. While the effect of the interaction between racePctWhite and PctVacantBoarded is significant in the logistic regression model, it is not accounted for in the variable importance plot for the random forest model. 
