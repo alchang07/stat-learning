@@ -27,6 +27,7 @@ train <- sample(1:nrow(lettersdf), nrow(lettersdf) * .75)
 #### Building a boosted tree
 
 ```{r}
+set.seed(40)
 boost.letters = gbm(V1 ~., data = lettersdf[train,], distribution = "multinomial", n.trees = 50, interaction.depth = 1, shrinkage = 0.1)
 
 summary(boost.letters)
@@ -51,14 +52,14 @@ correct_letters
 letters_mis <- (sum(conf_letters) - correct_letters)/sum(conf_letters)
 letters_mis
 ```
-- The miscclassification rate of my model is 0.3056. 
-#### Slow the learning
+- The miscclassification rate of my model is 0.3228. 
 - H was the most difficult letter to distinguish
 - E and X, H and O, Q ans G, Z and S, and T and Y seem to be the letter pairs that were the most difficult to distinguish from one another respectively. 
 
 #### Slow the learning
 ```{r}
 #Build second model
+set.seed(40)
 boost.slow = gbm(V1 ~., data = lettersdf[train,], distribution = "multinomial", n.trees = 300, interaction.depth = 1, shrinkage = 0.05)
 
 summary(boost.slow)
@@ -78,7 +79,7 @@ slow_mis <- (sum(conf_slow) - correct_slow)/sum(conf_slow)
 slow_mis
 
 ```
-1. The slower learner yieled a lower misclassification rate of 0.213.
+1. The slower learner yielded a lower misclassification rate of 0.2278.
 2. Most of the letter pairs that were difficult to distinguish before become easier to distinguish or remained about the same. The letter pairs that were most difficult to distinguish from one another in the previous model (E and X, H and O, Q ans G, Z and S, and T and Y) all became easier to distinguish. The capacity to distinguish betwen T and Y seemed to improve the most in this model.
 
 ##### Communities and Crime
@@ -86,19 +87,73 @@ slow_mis
 #### One last boost
 
 ```{r}
-#load data
+#load training data
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
 
+d_cleaned <- data.frame("blank" = rep(0, nrow(d)))
+counter <- 1
+
+for(i in 5:ncol(d)){
+  if(d[1, i] != "?"){
+    d_cleaned[[counter]] <- d[[i]]
+    colnames(d_cleaned)[counter] <- colnames(d)[i]
+    counter <- counter + 1
+  }
+}
+
+#load test data
+test_data <- read.csv("https://bit.ly/2PYS8Ap")
+crime_test <- data.frame("blank" = rep(0, nrow(test_data)))
+counter <- 1
+
+for(i in 5:ncol(test_data)){
+  if(test_data[1, i] != "?"){
+    crime_test[[counter]] <- test_data[[i]]
+    colnames(crime_test)[counter] <- colnames(test_data)[i]
+    counter <- counter + 1
+  }
+}
 #Build model
+set.seed(40)
+boost.crime = gbm(ViolentCrimesPerPop ~., data = d_cleaned, distribution = "gaussian", n.trees = 300, interaction.depth = 1, shrinkage = 0.05)
+
+summary(boost.crime)
 
 #Predict rate
-
+yhat.crime = predict(boost.crime, newdata = crime_test, n.trees = 300, type = "response")
 #Compute test MSE
+mean((yhat.crime - crime_test$ViolentCrimesPerPop)^2)
 ```
-
+The test MSE of my boosted tree is 0.01345545. This is lower than the test MSEs from my pruned regression tree (0.01544466) and my group's regression model (0.01647594). However, both bagging and the random forest model stil performed better, yielding lower test MSEs of 0.003120125 and 0.003194281 respectively. 
 
 ##### Chapter 8 exercises
 
+5. 
+a) Majority vote approach: 
+  
+Six estimates of P(Class is Red | X) are greater than 0.5 (0.55,   0.6, 0.6 0.65, 0.7, 0.75), and four estimates of P(Class is Red |   X) are less than 0.5 (0.1, 0.15, 0.2, 0.2). Consequently, majority votes indicate that the final classificaion is RED. 
+
 ```{r}
+s = c(0.1, 0.15, 0.2, 0.2, 0.55, 0.6, 0.6, 0.65, 0.7, 0.75)
+mean(s)
 ```
+
+b) Average probability: 
+
+The mean of all the estimates for P(Class is Red | X) is 0.45 which indicates that the final classification is GREEN. 
+
+6. 
+
+We first use recursive binary splitting to fit a tree to the training data. Recursive binary splitting is an approach that partitions the predictor space intto regions for the best possible minimiization of the RSS. This first single partition entails the consideration of all possible predictors and their possible values before the selection of a cutpoint that generates the lowest RSS. This process -- of selecting the predictor and cutpoint that most reduces the RSS within a region -- is applied to all subsequent regions until some stopping criterion is met. A common stopping criteria is the reaching of a minimal number of observation at each terminal node. 
+
+Next, we apply cost complexity pruning to this resulting large tree to generate a smaller tree with less splits. Cost complexity pruning may enhance the interpretability of our tree and minimize the variance and overfitting tendency of our model. This approach involves the consideration of a sequence of substree  as a function of a penalty parameter $\alpha$ that negotiates the tension between the model's fit to the data and its complexity. In the sequence, each  $\alpha$  corresponds to a subtree that minimizes this equation (where T represents the total number of terminal nodes in the tree):
+
+$\sum_{m = i}^{|T|}\sum_{i:x_iER_m}({y_i} - \hat{y}_{R_m})^2 + {\alpha}{|T|}$
+
+As $\alpha$ increases from zero, which is the initial tree, the parameter penalizes the complexity of the tree and begins to minimize the number of terminal nodes. Next, we select the optimal $\alpha$ to find its corresponding subtree. 
+
+We use K-fold cross validation to select the best $\alpha$. To do this we split the training data into K folds and perform recursive binary splitting and cost complexity pruning on all but one of the folds which serves as a validation set. We then consider the mean squared error of the predictions of the kth fold as a function of $\alpha$. After completeing this process for each fold, we choose the $\alpha$ that most reduces the average error. 
+
+We then return to the full dataset to find the tree that corresponds to our selected optimal $\alpha$.
 
 
