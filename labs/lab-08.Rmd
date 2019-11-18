@@ -1,0 +1,104 @@
+---
+title: "Lab 7"
+subtitle: "Ransom notes keep falling"
+author: "Alice Chang"
+output: pdf_document
+---
+
+* * *
+
+#### The data
+
+```{r}
+library(MASS)
+library(gbm)
+#load data
+lettersdf <- read.csv("https://raw.githubusercontent.com/stat-learning/course-materials/master/data/letters.csv",
+                      header = FALSE)
+
+#subset training data
+set.seed(1)
+train <- sample(1:nrow(lettersdf), nrow(lettersdf) * .75)
+
+```
+
+
+
+#### Building a boosted tree
+
+```{r}
+boost.letters = gbm(V1 ~., data = lettersdf[train,], distribution = "multinomial", n.trees = 50, interaction.depth = 1, shrinkage = 0.1)
+
+summary(boost.letters)
+```
+V13 (the measure of the correlation of the vertical variance with the horizontal position) is the most important variable.
+
+#### Assessing predictions
+
+```{r}
+#Predict letters
+yhat.boost = predict(boost.letters,newdata = lettersdf[-train,], n.trees = 50, type = "response")
+pred_letters<- LETTERS[apply(yhat.boost, 1, which.max)]
+pred_letters
+
+#Build confusion matrix
+conf_letters <- table(pred_letters, lettersdf[-train,]$V1)
+conf_letters
+
+#Calculate misclassification rate
+correct_letters <- sum(diag(conf_letters))
+correct_letters
+letters_mis <- (sum(conf_letters) - correct_letters)/sum(conf_letters)
+letters_mis
+```
+- The miscclassification rate of my model is 0.3056. 
+#### Slow the learning
+- H was the most difficult letter to distinguish
+- E and X, H and O, Q ans G, Z and S, and T and Y seem to be the letter pairs that were the most difficult to distinguish from one another respectively. 
+
+#### Slow the learning
+```{r}
+#Build second model
+boost.slow = gbm(V1 ~., data = lettersdf[train,], distribution = "multinomial", n.trees = 300, interaction.depth = 1, shrinkage = 0.05)
+
+summary(boost.slow)
+#Predict letters
+yhat.slow = predict(boost.slow, newdata = lettersdf[-train,], n.trees = 300, type = "response")
+pred_slow<- LETTERS[apply(yhat.slow, 1, which.max)]
+pred_slow
+
+#Build congudion mmatrix
+conf_slow<- table(pred_slow, lettersdf[-train,]$V1)
+conf_slow
+
+#Calculate misclassification rate
+correct_slow <- sum(diag(conf_slow))
+correct_slow
+slow_mis <- (sum(conf_slow) - correct_slow)/sum(conf_slow)
+slow_mis
+
+```
+1. The slower learner yieled a lower misclassification rate of 0.213.
+2. Most of the letter pairs that were difficult to distinguish before become easier to distinguish or remained about the same. The letter pairs that were most difficult to distinguish from one another in the previous model (E and X, H and O, Q ans G, Z and S, and T and Y) all became easier to distinguish. The capacity to distinguish betwen T and Y seemed to improve the most in this model.
+
+##### Communities and Crime
+
+#### One last boost
+
+```{r}
+#load data
+
+#Build model
+
+#Predict rate
+
+#Compute test MSE
+```
+
+
+##### Chapter 8 exercises
+
+```{r}
+```
+
+
