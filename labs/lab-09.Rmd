@@ -1,0 +1,187 @@
+---
+title: "Lab 9"
+author: "Alice Chang"
+output: pdf_document
+---
+
+
+## The Letter "R""
+```{r, echo = FALSE}
+library(dplyr)
+  
+d <- read.csv("https://raw.githubusercontent.com/stat-learning/course-materials/master/data/handwritten.csv")
+
+
+#Create new dataset for "r"
+r_data <- d %>%
+  filter(letter == "r")
+
+#Plot a few images for "r"
+plot_letter <- function(x, hasletter = TRUE) {
+  if(hasletter) {
+    a <- as.numeric(x[, -1])
+  }else{a <- as.numeric(x)}
+  m <- matrix(a, nrow = 8, byrow = TRUE)
+  m <- t(apply(m, 2, rev)) # rotate matrix
+  par(mar = rep(0, 4))
+  image(m, axes = FALSE, col = rev(grey(seq(0, 1, length = 256)))) #this should be a divergent palette
+  box()
+}
+
+
+plot_letter(r_data[1,], hasletter = TRUE)
+plot_letter(r_data[2,], hasletter = TRUE)
+
+
+#Compute and visualize mean image for letter
+r_data <- r_data[, -1]
+
+mean_r <- colMeans(r_data)
+mean_r
+
+
+plot_letter(mean_r, hasletter = FALSE)
+
+#Perform PCA
+pca1 <- prcomp(r_data, scale = TRUE)
+names(pca1)
+
+#Create biplot
+phi <- pca1$rotation
+phi
+biplot(pca1)
+
+#Plot first several PCs, learn about PC1 AND PC2
+plot_letter(phi[,1], hasletter = FALSE)
+plot_letter(phi[,2], hasletter = FALSE)
+
+
+
+#Plot the PCs
+d_2<- as.data.frame(pca1$x)
+library(ggplot2)
+p1 <- ggplot(d_2, aes(x = PC1, y = PC2)) + geom_point(alpha = .4) + theme_bw()
+p1
+
+#Construct Scree Plor
+frame <- data.frame(PC = 1:20,
+                PVE = pca1$sdev[1:20]^2 /
+                  sum(pca1$sdev[1:20]^2))
+ggplot(frame, aes(x = PC, y = PVE)) +
+  geom_line() + 
+  geom_point()
+
+#Scatterplot of selected observations
+
+pc_grid <- function(pca, data) {
+  d <- data
+  grid_points <- as.matrix(expand.grid(seq(-1.5, 1.5, length.out = 5), 
+                                       seq(-1.5, 1.5, length.out = 5)))
+  pc_points <- pca$x[, 1:2]
+  nearest_ind <- rep(NA, nrow(grid_points))
+  for(i in 1:nrow(grid_points)) {
+    gp <- matrix(rep(grid_points[i, ], nrow(pc_points)), 
+                 ncol = 2, byrow = TRUE)
+    nearest_ind[i] <- which.min(rowSums((pc_points - gp)^2))
+  }
+  nearest_grid <- data.frame(d[nearest_ind, ])
+  par(mfrow = c(5, 5))
+  regrid <- c(21:25, 16:20, 11:15, 6:10, 1:5)
+  for(i in regrid) {
+    plot_letter(nearest_grid[i, ])
+  }
+}
+
+pc_grid(pca1, r_data)
+
+#Image construction 
+z <- pca1$x
+       #1 by m
+z_tilda <- z[ ,1:10]
+
+        #64 by ten
+phi <- pca1$rotation
+phi_tilda <- phi[,1:10]
+image1 <- t(mean_r) + z_tilda [1, ] %*% t(phi_tilda)
+image2 <- t(mean_r) + z_tilda [2, ] %*% t(phi_tilda)
+plot_letter(image1, hasletter = FALSE)
+plot_letter(image2, hasletter = FALSE)
+
+#Fuller image construction
+z_fuller <- z[ ,1:60]
+phi_fuller <- phi[,1:60]
+
+full_image1 <- t(mean_r) + z_fuller[1,] %*% t(phi_fuller)
+plot_letter(full_image1, hasletter = FALSE)
+
+full_image2 <- t(mean_r) + z_fuller[2,] %*% t(phi_fuller)
+plot_letter(full_image2, hasletter = FALSE)
+
+
+
+```
+In this dataset, the rows seem to represent the letter classification of each image, and the columns represent each of the pixels in the image. 
+
+Exploring the letter grid, PC1 (horizontal axis) seems to be encoding for how left-aligned the letters are (or how much the letters ascend upwards diagonally from left to right) in the image. PC2(vertical axis) could be encoding for the width of the image that is filled by the letter. 
+
+The fuller image construction, yields the more accurate letter result. 
+
+
+## The Letter "L"
+```{r}
+l_data <- d %>%
+  filter(letter == "l")
+
+
+#Compute/visualize mean image for "l"
+l_data <- l_data[, -1]
+mean_l <- colMeans(l_data)
+plot_letter(mean_l, hasletter = FALSE)
+
+#Perform PCA
+pca2 <- prcomp(l_data, scale = TRUE)
+
+#Construct Scree Plot
+frame_l <- data.frame(PC = 1:20,
+                PVE = pca1$sdev[1:20]^2 /
+                  sum(pca1$sdev[1:20]^2))
+ggplot(frame_l, aes(x = PC, y = PVE)) +
+  geom_line() + 
+  geom_point()
+
+#Plot first several PCs
+phi_l <- pca2$rotation
+plot_letter(phi_l[,1], hasletter = FALSE)
+plot_letter(phi_l[,2], hasletter = FALSE)
+
+#Plot the PCs
+d_3<- as.data.frame(pca2$x)
+library(ggplot2)
+p2 <- ggplot(d_3, aes(x = PC1, y = PC2)) + geom_point(alpha = .4) + theme_bw()
+p2
+
+#Plot letter grid
+pc_grid(pca2, l_data)
+
+#Image construction
+z_l <- pca2$x
+z_l_tilda <- z_l[,1:10]
+phi_l_tilda <- phi_l[,1:10]
+image1_l <- t(mean_l) + z_l_tilda [1, ] %*% t(phi_l_tilda)
+image2_l <- t(mean_l) + z_l_tilda [2, ] %*% t(phi_l_tilda)
+plot_letter(image1_l, hasletter = FALSE)
+plot_letter(image2_l, hasletter = FALSE)
+
+#Fuller image construction
+z_l_full <- z_l[,1:60]
+phi_l_full <- phi_l[,1:60]
+image1_l_full <- t(mean_l) + z_l_full [1, ] %*% t(phi_l_full)
+image2_l_full <- t(mean_l) + z_l_full [2, ] %*% t(phi_l_full)
+plot_letter(image1_l_full, hasletter = FALSE)
+plot_letter(image2_l_full, hasletter = FALSE)
+
+
+
+
+```
+Examining the letter grid, PC1 (horizontal axis) seems to be encoding for how centered the letter is in the image. PC2(vertical axis) could be encoding for the straightness of the letter. As observed previously, a fuller image contstruction yields a more accurate result.
