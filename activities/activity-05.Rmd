@@ -1,0 +1,43 @@
+---
+title: "Activity 5"
+author: "Alice Chang"
+output: pdf_document
+---
+
+```{r}
+
+library(ggplot2)
+#Load data
+poverty <- read.delim("https://bitly.com/381pd5e")
+
+poverty <- poverty[-1]
+set.seed(1)
+
+pca <- prcomp(poverty)
+dat.loadings <- pca$x[,1:2]
+cl <- kmeans(dat.loadings, centers=2)
+pca1 <-pca$x[,1]
+pca2 <-pca$x[,2]
+
+mydf<-data.frame(PCA1=pca1, PCA2=pca2, Cluster=factor(cl$cluster))
+
+ggplot(mydf, aes(x=PCA1, y=PCA2, color=Cluster)) + 
+       geom_point() 
+
+#k = 3
+c2 <- kmeans(dat.loadings, centers=3)
+mydf2<-data.frame(PCA1=pca1, PCA2=pca2, Cluster2=factor(c2$cluster))
+ggplot(mydf2, aes(x=PCA1, y=PCA2, color=Cluster2)) + 
+       geom_point() 
+
+#k = 4
+c3 <- kmeans(dat.loadings, centers=5)
+mydf3<-data.frame(PCA1=pca1, PCA2=pca2, Cluster3=factor(c3$cluster))
+ggplot(mydf3, aes(x=PCA1, y=PCA2, color=Cluster3)) + 
+       geom_point() 
+
+
+
+
+```
+
