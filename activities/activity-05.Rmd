@@ -30,7 +30,7 @@ mydf2<-data.frame(PCA1=pca1, PCA2=pca2, Cluster2=factor(c2$cluster))
 ggplot(mydf2, aes(x=PCA1, y=PCA2, color=Cluster2)) + 
        geom_point() 
 
-#k = 4
+#k = 5
 c3 <- kmeans(dat.loadings, centers=5)
 mydf3<-data.frame(PCA1=pca1, PCA2=pca2, Cluster3=factor(c3$cluster))
 ggplot(mydf3, aes(x=PCA1, y=PCA2, color=Cluster3)) + 
